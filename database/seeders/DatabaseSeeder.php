@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             StokSeeder::class,
             PenjualanSeeder::class,
             PenjualanDetailSeeder::class,
+            SupplierSeeder::class,
         ]);
     }
 }

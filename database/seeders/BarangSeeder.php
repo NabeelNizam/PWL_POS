@@ -14,7 +14,7 @@ class BarangSeeder extends Seeder
     public function run(): void
     {
         $data = [];
-        for ($i = 1; $i <= 10; $i++) {
+        for ($i = 1; $i <= 15; $i++) {
             $data[] = [
                 'kategori_id' => rand(1, 5),
                 'barang_kode' => 'BRG00' . $i,
