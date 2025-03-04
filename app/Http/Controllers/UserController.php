@@ -17,7 +17,7 @@ class UserController extends Controller
             'level_id' => 2,
         ]);
 
-        $user->username = 'manager12';
+        $user->username = 'manager12';  
 
         $user->save();
 
