@@ -5,9 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class KategoriModel extends Model
+class PenjualanDetailModel extends Model
 {
-    protected $table = 'm_kategori';
-    protected $primaryKey = 'kategori_id';
+    protected $table = 't_penjualan_detail';
+    protected $primaryKey = 'detail_id';
     
 }
