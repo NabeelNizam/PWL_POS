@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Route;
 Route::pattern('id', '[0-9]+'); 
 
 Route::get('/login', [AuthController::class, 'login'])->name('login');
+Route::get('/register', [AuthController::class, 'register'])->name('register');
+Route::post('/postregister', [AuthController::class, 'postregister']);
 Route::post('/postlogin', [AuthController::class, 'postlogin']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
@@ -20,7 +22,7 @@ Route::middleware(['auth'])->group(function () { // artinya semua route di dalam
 
     Route::get('/', [WelcomeController::class, 'index']);
 
-    Route::group(['prefix' => 'user'], function() {
+    Route::group(['prefix' => 'user', 'middleware' => ['authorize:ADM']], function () {
         Route::get('/', [UserController::class, 'index']);
         Route::post('/list', [UserController::class, 'list']);
         Route::get('/create', [UserController::class, 'create']);
@@ -56,7 +58,7 @@ Route::middleware(['auth'])->group(function () { // artinya semua route di dalam
 
     });
     
-    Route::group(['prefix' => 'kategori'], function() {
+    Route::group(['prefix' => 'kategori', 'middleware' => ['authorize:STF,ADM,MNG']], function () {
         Route::get('/', [KategoriController::class, 'index']);
         Route::post('/list', [KategoriController::class, 'list']);
         Route::get('/create', [KategoriController::class, 'create']);
@@ -74,7 +76,7 @@ Route::middleware(['auth'])->group(function () { // artinya semua route di dalam
         Route::delete('/{id}', [KategoriController::class, 'destroy']);
     });
     
-    Route::group(['prefix' => 'supplier'], function() {
+    Route::group(['prefix' => 'supplier', 'middleware' => ['authorize:STF,ADM,MNG']], function () {
         Route::get('/', [SupplierController::class, 'index']);
         Route::post('/list', [SupplierController::class, 'list']);
         Route::get('/create', [SupplierController::class, 'create']);
@@ -92,7 +94,7 @@ Route::middleware(['auth'])->group(function () { // artinya semua route di dalam
         Route::delete('/{id}', [SupplierController::class, 'destroy']);
     });
     
-    Route::group(['prefix' => 'barang'], function() {
+    Route::group(['prefix' => 'barang', 'middleware' => ['authorize:ADM,MNG,STF']], function () {
         Route::get('/', [BarangController::class, 'index']);
         Route::post('/list', [BarangController::class, 'list']);
         Route::get('/create', [BarangController::class, 'create']);
