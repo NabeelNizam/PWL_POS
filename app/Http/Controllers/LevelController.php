@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\LevelModel;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Monolog\Level;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use Yajra\DataTables\Facades\DataTables;
 
 class LevelController extends Controller
@@ -272,4 +275,133 @@ class LevelController extends Controller
 
         return view('level.show_ajax', ['level' => $level]);
     }
+
+    public function import()
+{
+    return view('level.import');
+}
+
+public function import_ajax(Request $request)
+{
+    try {
+        if ($request->ajax() || $request->wantsJson()) {
+            $rules = [
+                'f' => ['required', 'mimes:xlsx', 'max:1024']
+            ];
+
+            $validator = Validator::make($request->all(), $rules);
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Validasi Gagal',
+                    'msgField' => $validator->errors()
+                ]);
+            }
+
+            $file = $request->file('f');
+
+            $reader = IOFactory::createReader('Xlsx');
+            $reader->setReadDataOnly(true);
+            $spreadsheet = $reader->load($file); // pakai langsung, bukan getRealPath
+            $sheet = $spreadsheet->getActiveSheet();
+            $data = $sheet->toArray(null, false, true, true);
+
+            $insert = [];
+            if (count($data) > 1) {
+                foreach ($data as $baris => $value) {
+                    if ($baris > 1 && !empty($value['A']) && !empty($value['B'])) {
+                        $insert[] = [
+                            'level_kode' => $value['A'], 
+                            'level_nama' => $value['B'],  
+                            'created_at' => now(),
+                        ];
+                    }
+                }
+
+                if (count($insert) > 0) {
+                    // optional: cek dulu kalau modelnya sudah di-import
+                    LevelModel::insertOrIgnore($insert);
+                }
+
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Data berhasil diimport'
+                ]);
+            } else {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Tidak ada data yang diimport'
+                ]);
+            }
+        }
+
+        return redirect('/level');
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Terjadi error: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+    public function export_pdf()
+{
+    $level = LevelModel::select('level_id','level_kode','level_nama')
+                ->orderBy('level_kode')
+                ->get();
+
+    // use Barryvdh\DomPDF\Facade\Pdf;
+    $pdf = Pdf::loadView('level.export_pdf', ['level' => $level]);
+    $pdf->setPaper('a4', 'portrait'); // set ukuran kertas dan orientasi
+    $pdf->setOption("isRemoteEnabled", true); // set true jika ada gambar dari url
+    $pdf->render();
+
+    return $pdf->stream('Data level '.date('Y-m-d H:i:s').'.pdf');
+}
+public function export_excel()
+{
+    $level = LevelModel::select("level_kode", "level_nama")
+                       ->orderBy('level_kode')
+                       ->get();
+
+    $spreadsheet = new Spreadsheet();
+    $sheet = $spreadsheet->getActiveSheet();
+
+    // Header
+    $sheet->setCellValue('A1', 'No');
+    $sheet->setCellValue('B1', 'Kode Level');
+    $sheet->setCellValue('C1', 'Nama Level');
+    $sheet->getStyle("A1:C1")->getFont()->setBold(true);
+
+    // Data isi
+    $no = 1;
+    $baris = 2;
+    foreach ($level as $item) {
+        $sheet->setCellValue("A{$baris}", $no++);
+        $sheet->setCellValue("B{$baris}", $item->level_kode);
+        $sheet->setCellValue("C{$baris}", $item->level_nama);
+        $baris++;
+    }
+
+    // Autosize kolom
+    foreach (range('A', 'C') as $col) {
+        $sheet->getColumnDimension($col)->setAutoSize(true);
+    }
+
+    $sheet->setTitle("Data Level");
+
+    $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
+    $filename = 'Data_Level_' . date("Ymd_His") . '.xlsx';
+
+    // Output ke browser
+    header("Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    header("Content-Disposition: attachment; filename=\"$filename\"");
+    header("Cache-Control: max-age=0");
+    header("Expires: 0");
+    header("Pragma: public");
+
+    $writer->save('php://output');
+    exit;
+}
+
 }

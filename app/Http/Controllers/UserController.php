@@ -5,9 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\LevelModel;
 use App\Models\User;
 use App\Models\UserModel;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use Psy\Readline\Userland;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -307,4 +310,142 @@ class UserController extends Controller
 
         return view('user.show_ajax', ['user' => $user]);
     }
+
+    public function export_pdf()
+{
+    $user = UserModel::select('user_id','username','nama', 'level_id')
+                ->orderBy('level_id')
+                ->orderBy('user_id')
+                ->with('level')
+                ->get();
+
+    // use Barryvdh\DomPDF\Facade\Pdf;
+    $pdf = Pdf::loadView('user.export_pdf', ['user' => $user]);
+    $pdf->setPaper('a4', 'portrait'); // set ukuran kertas dan orientasi
+    $pdf->setOption("isRemoteEnabled", true); // set true jika ada gambar dari url
+    $pdf->render();
+
+    return $pdf->stream('Data user '.date('Y-m-d H:i:s').'.pdf');
+}
+public function import()
+{
+    return view('user.import');
+}
+public function import_ajax(Request $request)
+{
+    try {
+        if ($request->ajax() || $request->wantsJson()) {
+            $rules = [
+                'f' => ['required', 'mimes:xlsx', 'max:1024']
+            ];
+
+            $validator = Validator::make($request->all(), $rules);
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Validasi Gagal',
+                    'msgField' => $validator->errors()
+                ]);
+            }
+
+            $file = $request->file('f');
+
+            $reader = IOFactory::createReader('Xlsx');
+            $reader->setReadDataOnly(true);
+            $spreadsheet = $reader->load($file);
+            $sheet = $spreadsheet->getActiveSheet();
+            $data = $sheet->toArray(null, false, true, true);
+
+            $insert = [];
+            if (count($data) > 1) {
+                foreach ($data as $baris => $value) {
+                    if (
+                        $baris > 1 &&
+                        !empty($value['A']) && // level_id
+                        !empty($value['B']) && // username
+                        !empty($value['C']) && // nama
+                        !empty($value['D'])    // password
+                    ) {
+                        $insert[] = [
+                            'level_id' => (int) $value['A'],
+                            'username' => $value['B'],
+                            'nama'     => $value['C'],
+                            'password' => bcrypt($value['D']),
+                            'created_at' => now(),
+                        ];
+                    }
+                }
+
+                if (count($insert) > 0) {
+                    UserModel::insertOrIgnore($insert);
+                }
+
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Data berhasil diimport'
+                ]);
+            } else {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Tidak ada data yang diimport'
+                ]);
+            }
+        }
+
+        return redirect('/user');
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Terjadi error: ' . $e->getMessage()
+        ], 500);
+    }
+}
+public function export_excel()
+{
+    $user = UserModel::select("level_id", "username", "nama")
+                     ->orderBy('username')
+                     ->get();
+
+    $spreadsheet = new Spreadsheet();
+    $sheet = $spreadsheet->getActiveSheet();
+
+    // Header
+    $sheet->setCellValue('A1', 'No');
+    $sheet->setCellValue('B1', 'Level ID');
+    $sheet->setCellValue('C1', 'Username');
+    $sheet->setCellValue('D1', 'Nama');
+    $sheet->getStyle("A1:D1")->getFont()->setBold(true);
+
+    // Data isi
+    $no = 1;
+    $baris = 2;
+    foreach ($user as $item) {
+        $sheet->setCellValue("A{$baris}", $no++);
+        $sheet->setCellValue("B{$baris}", $item->level_id);
+        $sheet->setCellValue("C{$baris}", $item->username);
+        $sheet->setCellValue("D{$baris}", $item->nama);
+        $baris++;
+    }
+
+    // Autosize kolom
+    foreach (range('A', 'D') as $col) {
+        $sheet->getColumnDimension($col)->setAutoSize(true);
+    }
+
+    $sheet->setTitle("Data User");
+
+    $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
+    $filename = 'Data_User_' . date("Ymd_His") . '.xlsx';
+
+    // Output ke browser
+    header("Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    header("Content-Disposition: attachment; filename=\"$filename\"");
+    header("Cache-Control: max-age=0");
+    header("Expires: 0");
+    header("Pragma: public");
+
+    $writer->save('php://output');
+    exit;
+}
+
 }
