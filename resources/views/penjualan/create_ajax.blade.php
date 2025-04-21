@@ -94,6 +94,40 @@
 </form>
 
 <script>
+    $('#form-penjualan').on('submit', function (e) {
+        e.preventDefault();
+
+        $.ajax({
+            url: $(this).attr('action'),
+            method: "POST",
+            data: $(this).serialize(),
+            success: function (res) {
+                if (res.status === 'success') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil',
+                        text: res.message,
+                    }).then(() => {
+                        location.reload(); // atau reset form
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Peringatan',
+                        text: res.message,
+                    });
+                }
+            },
+            error: function (xhr) {
+                let msg = xhr.responseJSON?.message || 'Terjadi kesalahan.';
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal',
+                    text: msg,
+                });
+            }
+        });
+    });
 $(document).ready(function () {
     function formatRupiah(angka) {
         return 'Rp ' + angka.toLocaleString('id-ID');
