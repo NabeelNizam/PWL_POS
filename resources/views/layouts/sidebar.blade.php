@@ -13,6 +13,16 @@
     <!-- Sidebar Menu -->
     <nav class="mt-2">
       <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+        <div class="col-md-12 text-center my-3">
+          <img src="{{ asset('profil/' . Auth::user()->username . '/foto.png') . '?v=' . time() }}"
+               alt="Foto Profil"
+               class="rounded-circle shadow-sm border"
+               style="width: 100px; height: 100px; object-fit: cover;">
+      
+          <div class="mt-2 font-weight-bold text-white">
+              {{ Auth::user()->username }}
+          </div>
+      </div>
         <!-- Add icons to the links using the .nav-icon class
              with font-awesome or any other icon font library -->
         <li class="nav-item">
@@ -67,7 +77,7 @@
           </a>
         </li>
         <li class="nav-item">
-          <a href="{{ url('/barang') }}" class="nav-link {{ ($activeMenu == 'penjualan') ? 'active' : ''}}">
+          <a href="{{ url('/penjualan') }}" class="nav-link {{ ($activeMenu == 'penjualan') ? 'active' : ''}}">
             <i class="nav-icon fas fa-cash-register"></i>
             <p>Transaksi Penjualan</p>
           </a>

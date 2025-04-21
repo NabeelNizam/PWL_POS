@@ -332,7 +332,6 @@ public function import_ajax(Request $request)
                 }
 
                 if (count($insert) > 0) {
-                    // optional: cek dulu kalau modelnya sudah di-import
                     BarangModel::insertOrIgnore($insert);
                 }
 

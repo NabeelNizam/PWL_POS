@@ -1,9 +1,9 @@
-<form action="{{ url('/profile/import_ajax') }}" method="POST" id="form-import-profile" enctype="multipart/form-data">
+<form action="{{ url('/barang/import_ajax') }}" method="POST" id="form-import" enctype="multipart/form-data">
     @csrf
-    <div id="modal-profile" class="modal-dialog" role="document">
+    <div id="modal-master" class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Ubah Foto Profil</h5>
+                <h5 class="modal-title" id="exampleModalLabel">Import Data Barang</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -11,9 +11,17 @@
 
             <div class="modal-body">
                 <div class="form-group">
-                    <label>Pilih Foto (jpg/jpeg/png)</label>
-                    <input type="file" name="foto" class="form-control">
-                    <small id="error-foto" class="error-text form-text text-danger"></small>
+                    <label>Download Template</label>
+                    <a href="{{ asset('template_barang.xlsx') }}" class="btn btn-info btn-sm" download>
+                        <i class="fa fa-file-excel"></i> Download
+                    </a>
+                    <small id="error-kategori_id" class="error-text form-text text-danger"></small>
+                </div>
+
+                <div class="form-group">
+                    <label>Pilih File</label>
+                    <input type="file" name="f" class="form-control">
+                    <small id="error-f" class="error-text form-text text-danger"></small>
                 </div>
             </div>
 
@@ -27,33 +35,33 @@
 
 <script>
     $(document).ready(function () {
-        $("#form-import-profile").validate({
+        $("#form-import").validate({
             rules: {
-                foto: { required: true, extension: "jpg|jpeg|png|gif" },
+                f: { required: true, extension: "xlsx" },
             },
             submitHandler: function (form) {
-                var formData = new FormData(form);
+                var formData = new FormData(form); // Jadikan form ke FormData untuk menghandle file
+               
 
                 $.ajax({
                     url: form.action,
                     type: form.method,
                     data: formData,
-                    processData: false,
+                    processData: false, // setting processData dan contentType ke false, untuk menghandle file
                     contentType: false,
                     success: function(response) {
-                        if (response.status) {
+                        if (response.status) {   
                             $('#myModal').modal('hide');
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Berhasil',
                                 text: response.message
-                            }).then(() => {
-                                location.reload(); // reload untuk tampilkan foto baru
                             });
+                            dataBarang.ajax.reload();
                         } else {
                             $('.error-text').text('');
                             $.each(response.msgField, function(prefix, val) {
-                                $('#error-' + prefix).text(val[0]);
+                                $('#error-'+prefix).text(val[0]);
                             });
                             Swal.fire({
                                 icon: 'error',

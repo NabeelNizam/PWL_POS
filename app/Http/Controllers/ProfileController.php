@@ -37,7 +37,7 @@ public function import_ajax(Request $request)
 {
     try {
         $request->validate([
-            'foto' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'foto' => 'required|image|mimes:jpeg,png,jpg,gif|max:4048',
         ]);
 
         $user = Auth::user();
@@ -47,14 +47,12 @@ public function import_ajax(Request $request)
         if ($request->hasFile('foto')) {
             $file = $request->file('foto');
 
-            // Buat folder jika belum ada
             if (!file_exists($folderPath)) {
                 mkdir($folderPath, 0777, true);
             }
 
             $filePath = $folderPath . '/foto.png';
 
-            // Hapus foto lama jika ada
             if (file_exists($filePath)) {
                 unlink($filePath);
             }
@@ -86,14 +84,5 @@ public function import_ajax(Request $request)
 }
 
 
-
-
-
-
-
-
-
-
-    
 
 }

@@ -25,7 +25,7 @@
                         <div class="col-md-3 text-center">
                             <img src="{{ asset('profil/' . Auth::user()->username . '/foto.png') . '?v=' . time() }}"
                             alt="Foto Profil"
-                            class="img-thumbnail shadow-sm"
+                            class="img-thumbnail shadow-sm rounded-circle"
                             style="max-width: 150px;">
                         </div>
                         <div class="col-md-9">
